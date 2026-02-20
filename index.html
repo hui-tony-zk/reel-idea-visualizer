@@ -422,7 +422,7 @@
 
           <div class="side-actions">
             <div class="side-action">
-              <div class="side-action-icon" id="mute-btn" onclick="toggleMute()" style="cursor:pointer">🔇</div>
+              <div class="side-action-icon mute-btn" onclick="toggleMute()" style="cursor:pointer">🔇</div>
               <span class="side-action-label">Sound</span>
             </div>
             <div class="side-action">
@@ -503,6 +503,10 @@
 
           <div class="side-actions">
             <div class="side-action">
+              <div class="side-action-icon mute-btn" onclick="toggleMute()" style="cursor:pointer">🔇</div>
+              <span class="side-action-label">Sound</span>
+            </div>
+            <div class="side-action">
               <div class="side-action-icon">♥</div>
               <span class="side-action-label">Save</span>
             </div>
@@ -578,6 +582,10 @@
           <div class="video-gradient"></div>
 
           <div class="side-actions">
+            <div class="side-action">
+              <div class="side-action-icon mute-btn" onclick="toggleMute()" style="cursor:pointer">🔇</div>
+              <span class="side-action-label">Sound</span>
+            </div>
             <div class="side-action">
               <div class="side-action-icon">♥</div>
               <span class="side-action-label">Save</span>
@@ -784,7 +792,7 @@
   function toggleMute() {
     isMuted = !isMuted;
     document.querySelectorAll('.video-player').forEach(v => v.muted = isMuted);
-    document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+    document.querySelectorAll('.mute-btn').forEach(b => b.textContent = isMuted ? '🔇' : '🔊');
   }
 
   // Start first video on interaction (browsers require user gesture for unmuted autoplay)
