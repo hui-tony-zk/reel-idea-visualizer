@@ -416,11 +416,15 @@
         <!-- Video side -->
         <div class="slide-panel video-panel">
           <div class="video-bg">
-            <video class="video-player" src="sora2.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+            <video class="video-player" src="sora2.mp4" loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
           </div>
           <div class="video-gradient"></div>
 
           <div class="side-actions">
+            <div class="side-action">
+              <div class="side-action-icon" id="mute-btn" onclick="toggleMute()" style="cursor:pointer">🔇</div>
+              <span class="side-action-label">Sound</span>
+            </div>
             <div class="side-action">
               <div class="side-action-icon">♥</div>
               <span class="side-action-label">Save</span>
@@ -493,7 +497,7 @@
       <div class="slide-pair" id="pair-1">
         <div class="slide-panel video-panel">
           <div class="video-bg">
-            <video class="video-player" src="seedance2.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+            <video class="video-player" src="seedance2.mp4" loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
           </div>
           <div class="video-gradient"></div>
 
@@ -569,7 +573,7 @@
       <div class="slide-pair" id="pair-2">
         <div class="slide-panel video-panel">
           <div class="video-bg">
-            <video class="video-player" src="sora2pro.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+            <video class="video-player" src="sora2pro.mp4" loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
           </div>
           <div class="video-gradient"></div>
 
@@ -775,13 +779,22 @@
     });
   }
 
-  // Start first video on any interaction
+  let isMuted = false;
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    document.querySelectorAll('.video-player').forEach(v => v.muted = isMuted);
+    document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+  }
+
+  // Start first video on interaction (browsers require user gesture for unmuted autoplay)
   document.addEventListener('click', () => {
     const v = document.querySelectorAll('.video-player')[currentSlide];
-    if (v) v.play().catch(()=>{});
+    if (v) { v.muted = false; v.play().catch(()=>{}); }
   }, { once: true });
-  // Try autoplay immediately
-  document.querySelectorAll('.video-player')[0]?.play().catch(()=>{});
+  // Try autoplay (muted first to guarantee it starts, then unmute on click)
+  const firstVid = document.querySelectorAll('.video-player')[0];
+  if (firstVid) { firstVid.muted = true; firstVid.play().catch(()=>{}); }
 </script>
 
 </body>
