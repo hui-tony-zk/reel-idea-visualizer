@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reel Idea Visualizer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', sans-serif;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #000;
+    border-radius: 44px;
+    border: 3px solid #333;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8);
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 54px;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 8px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; }
+  .status-bar .icons { font-size: 12px; letter-spacing: 2px; }
+
+  /* Main swipe container - vertical */
+  .video-carousel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .video-slide {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* Each video slide has a horizontal pair: video + script */
+  .slide-pair {
+    display: flex;
+    width: 200%;
+    height: 100%;
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .slide-panel {
+    width: 50%;
+    height: 100%;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  /* Video panel */
+  .video-panel {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .video-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .video-thumbnail {
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+    opacity: 0.7;
+  }
+
+  .video-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+  }
+
+  .play-button {
+    width: 64px;
+    height: 64px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .play-button::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 12px 22px;
+    border-color: transparent transparent transparent #fff;
+    margin-left: 4px;
+  }
+
+  /* Bottom overlay on video */
+  .video-overlay {
+    position: relative;
+    z-index: 10;
+    padding: 0 16px 40px;
+  }
+
+  .model-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+  .badge-sora { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .badge-seedance { background: linear-gradient(135deg, #059669, #10b981); }
+  .badge-kling { background: linear-gradient(135deg, #ea580c, #f59e0b); }
+
+  .video-caption {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .video-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Right side actions (like TikTok) */
+  .side-actions {
+    position: absolute;
+    right: 12px;
+    bottom: 140px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .side-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .side-action-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .side-action-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* Script panel */
+  .script-panel {
+    background: #0a0a0a;
+    padding: 70px 20px 40px;
+    overflow-y: auto;
+  }
+
+  .script-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .script-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .script-back {
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .script-section {
+    margin-bottom: 20px;
+  }
+  .script-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b5cf6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .script-line {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    border-left: 3px solid transparent;
+  }
+  .script-line.dialogue { border-left-color: #8b5cf6; }
+  .script-line.direction { border-left-color: #f59e0b; color: rgba(255,255,255,0.6); font-style: italic; }
+  .script-line.cta { border-left-color: #10b981; }
+
+  /* Dot indicators */
+  .dot-indicators {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transition: all 0.3s;
+  }
+  .dot.active {
+    height: 20px;
+    border-radius: 3px;
+    background: #fff;
+  }
+
+  /* Swipe hint */
+  .swipe-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  /* Nav bar */
+  .nav-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+  }
+  .nav-item.active { color: #fff; }
+  .nav-icon { font-size: 20px; }
+
+  /* Header bar */
+  .header-bar {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    height: 44px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .header-tab {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    position: relative;
+    padding-bottom: 4px;
+  }
+  .header-tab.active {
+    color: #fff;
+    font-weight: 700;
+  }
+  .header-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+  }
+
+  /* Horizontal swipe hint */
+  .h-swipe-hint {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    z-index: 30;
+    font-size: 20px;
+    color: rgba(255,255,255,0.3);
+    animation: slideLeft 1.5s infinite;
+  }
+  @keyframes slideLeft {
+    0%, 100% { transform: translateX(0); opacity: 0.3; }
+    50% { transform: translateX(-8px); opacity: 0.6; }
+  }
+
+  /* Label tag */
+  .label-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="phone">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <span class="icons">●●● ▶ 🔋</span>
+  </div>
+
+  <!-- Header -->
+  <div class="header-bar">
+    <span class="header-tab">Following</span>
+    <span class="header-tab active">Ideas</span>
+    <span class="header-tab">Saved</span>
+  </div>
+
+  <!-- Vertical carousel -->
+  <div class="video-carousel" id="carousel">
+
+    <!-- Slide 1: Sora 2 -->
+    <div class="video-slide" style="top: 0" data-index="0">
+      <div class="slide-pair" id="pair-0">
+        <!-- Video side -->
+        <div class="slide-panel video-panel">
+          <div class="video-bg">
+            <video class="video-player" src="sora2.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+          </div>
+          <div class="video-gradient"></div>
+
+          <div class="side-actions">
+            <div class="side-action">
+              <div class="side-action-icon">♥</div>
+              <span class="side-action-label">Save</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">↗</div>
+              <span class="side-action-label">Share</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">♻</div>
+              <span class="side-action-label">Regen</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">✎</div>
+              <span class="side-action-label">Edit</span>
+            </div>
+          </div>
+
+          <div class="video-overlay">
+            <div><span class="model-badge badge-sora">SORA 2</span> <span class="label-tag">12s • 9:16</span></div>
+            <p class="video-caption">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month…"</p>
+            <div class="video-meta">
+              <span>🎬 Take 1</span>
+              <span>📐 1080×1920</span>
+            </div>
+          </div>
+          <div class="h-swipe-hint">‹</div>
+        </div>
+
+        <!-- Script side -->
+        <div class="slide-panel script-panel">
+          <div class="script-header">
+            <div class="script-back" onclick="swipeScript(0, 'back')">→</div>
+            <h2>Full Script</h2>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🎬 Hook (0–3s)</div>
+            <div class="script-line dialogue">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📊 Context (3–5s)</div>
+            <div class="script-line dialogue">"That means for every 3 homes that sold… more than 1 seller took LESS than they wanted."</div>
+            <div class="script-line direction">Quick cut to screen recording scrolling through price reductions on MLS</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🔥 Reframe (5–8s)</div>
+            <div class="script-line dialogue">"If you're a first-time buyer sitting on the sidelines thinking you can't afford it? You're wrong."</div>
+            <div class="script-line dialogue">"This is a buyer's market forming in real time. And most people don't even know it yet."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">💡 Value (8–11s)</div>
+            <div class="script-line dialogue">"Here's exactly what I'd do if I was buying my first home in Southeast Alabama RIGHT NOW:"</div>
+            <div class="script-line direction">3 quick tips: get pre-approved at today's rates, target homes 30+ days on market, negotiate closing costs</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📲 CTA (11–12s)</div>
+            <div class="script-line cta">"DM me 'READY' and I'll send you 5 homes under $250K that are sitting and waiting for your offer."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: Seedance 2 -->
+    <div class="video-slide" style="top: 100%" data-index="1">
+      <div class="slide-pair" id="pair-1">
+        <div class="slide-panel video-panel">
+          <div class="video-bg">
+            <video class="video-player" src="seedance2.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+          </div>
+          <div class="video-gradient"></div>
+
+          <div class="side-actions">
+            <div class="side-action">
+              <div class="side-action-icon">♥</div>
+              <span class="side-action-label">Save</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">↗</div>
+              <span class="side-action-label">Share</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">♻</div>
+              <span class="side-action-label">Regen</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">✎</div>
+              <span class="side-action-label">Edit</span>
+            </div>
+          </div>
+
+          <div class="video-overlay">
+            <div><span class="model-badge badge-seedance">SEEDANCE 2</span> <span class="label-tag">12s • 9:16</span></div>
+            <p class="video-caption">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month…"</p>
+            <div class="video-meta">
+              <span>🎬 Take 1</span>
+              <span>📐 1080×1920</span>
+            </div>
+          </div>
+          <div class="h-swipe-hint">‹</div>
+        </div>
+
+        <div class="slide-panel script-panel">
+          <div class="script-header">
+            <div class="script-back" onclick="swipeScript(1, 'back')">→</div>
+            <h2>Full Script</h2>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🎬 Hook (0–3s)</div>
+            <div class="script-line dialogue">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📊 Context (3–5s)</div>
+            <div class="script-line dialogue">"That means for every 3 homes that sold… more than 1 seller took LESS than they wanted."</div>
+            <div class="script-line direction">Quick cut to screen recording scrolling through price reductions on MLS</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🔥 Reframe (5–8s)</div>
+            <div class="script-line dialogue">"If you're a first-time buyer sitting on the sidelines thinking you can't afford it? You're wrong."</div>
+            <div class="script-line dialogue">"This is a buyer's market forming in real time. And most people don't even know it yet."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">💡 Value (8–11s)</div>
+            <div class="script-line dialogue">"Here's exactly what I'd do if I was buying my first home in Southeast Alabama RIGHT NOW:"</div>
+            <div class="script-line direction">3 quick tips: get pre-approved at today's rates, target homes 30+ days on market, negotiate closing costs</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📲 CTA (11–12s)</div>
+            <div class="script-line cta">"DM me 'READY' and I'll send you 5 homes under $250K that are sitting and waiting for your offer."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: Kling -->
+    <div class="video-slide" style="top: 200%" data-index="2">
+      <div class="slide-pair" id="pair-2">
+        <div class="slide-panel video-panel">
+          <div class="video-bg">
+            <video class="video-player" src="kling2.mp4" loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+          </div>
+          <div class="video-gradient"></div>
+
+          <div class="side-actions">
+            <div class="side-action">
+              <div class="side-action-icon">♥</div>
+              <span class="side-action-label">Save</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">↗</div>
+              <span class="side-action-label">Share</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">♻</div>
+              <span class="side-action-label">Regen</span>
+            </div>
+            <div class="side-action">
+              <div class="side-action-icon">✎</div>
+              <span class="side-action-label">Edit</span>
+            </div>
+          </div>
+
+          <div class="video-overlay">
+            <div><span class="model-badge badge-kling">KLING 2.0</span> <span class="label-tag">12s • 9:16</span></div>
+            <p class="video-caption">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month…"</p>
+            <div class="video-meta">
+              <span>🎬 Take 1</span>
+              <span>📐 1080×1920</span>
+            </div>
+          </div>
+          <div class="h-swipe-hint">‹</div>
+        </div>
+
+        <div class="slide-panel script-panel">
+          <div class="script-header">
+            <div class="script-back" onclick="swipeScript(2, 'back')">→</div>
+            <h2>Full Script</h2>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🎬 Hook (0–3s)</div>
+            <div class="script-line dialogue">"I just pulled the numbers. 36% of homes in our area sold BELOW asking price last month."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📊 Context (3–5s)</div>
+            <div class="script-line dialogue">"That means for every 3 homes that sold… more than 1 seller took LESS than they wanted."</div>
+            <div class="script-line direction">Quick cut to screen recording scrolling through price reductions on MLS</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">🔥 Reframe (5–8s)</div>
+            <div class="script-line dialogue">"If you're a first-time buyer sitting on the sidelines thinking you can't afford it? You're wrong."</div>
+            <div class="script-line dialogue">"This is a buyer's market forming in real time. And most people don't even know it yet."</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">💡 Value (8–11s)</div>
+            <div class="script-line dialogue">"Here's exactly what I'd do if I was buying my first home in Southeast Alabama RIGHT NOW:"</div>
+            <div class="script-line direction">3 quick tips: get pre-approved at today's rates, target homes 30+ days on market, negotiate closing costs</div>
+          </div>
+
+          <div class="script-section">
+            <div class="script-section-label">📲 CTA (11–12s)</div>
+            <div class="script-line cta">"DM me 'READY' and I'll send you 5 homes under $250K that are sitting and waiting for your offer."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dot indicators -->
+  <div class="dot-indicators" id="dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <!-- Swipe hint -->
+  <div class="swipe-hint" id="swipeHint">↑ swipe up for next • swipe left for script</div>
+
+  <!-- Nav bar -->
+  <div class="nav-bar">
+    <div class="nav-item"><span class="nav-icon">🏠</span><span>Home</span></div>
+    <div class="nav-item"><span class="nav-icon">🔍</span><span>Explore</span></div>
+    <div class="nav-item active"><span class="nav-icon">✨</span><span>Ideas</span></div>
+    <div class="nav-item"><span class="nav-icon">📋</span><span>Scripts</span></div>
+    <div class="nav-item"><span class="nav-icon">👤</span><span>Profile</span></div>
+  </div>
+</div>
+
+<script>
+  let currentSlide = 0;
+  const totalSlides = 3;
+  const carousel = document.getElementById('carousel');
+  const phone = document.getElementById('phone');
+  const dots = document.querySelectorAll('.dot');
+  const scriptStates = [false, false, false]; // track which slides show script
+
+  let touchStartX = 0, touchStartY = 0;
+  let touchEndX = 0, touchEndY = 0;
+
+  phone.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  phone.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  }, { passive: true });
+
+  // Mouse drag support
+  let mouseDown = false;
+  phone.addEventListener('mousedown', e => {
+    mouseDown = true;
+    touchStartX = e.screenX;
+    touchStartY = e.screenY;
+  });
+  phone.addEventListener('mouseup', e => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    touchEndX = e.screenX;
+    touchEndY = e.screenY;
+    handleSwipe();
+  });
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' || e.key === 'k') swipeVertical('up');
+    if (e.key === 'ArrowDown' || e.key === 'j') swipeVertical('down');
+    if (e.key === 'ArrowLeft' || e.key === 'h') swipeScript(currentSlide, 'open');
+    if (e.key === 'ArrowRight' || e.key === 'l') swipeScript(currentSlide, 'back');
+  });
+
+  // Wheel support
+  let wheelCooldown = false;
+  phone.addEventListener('wheel', e => {
+    if (wheelCooldown) return;
+    wheelCooldown = true;
+    setTimeout(() => wheelCooldown = false, 500);
+    
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      if (e.deltaY > 30) swipeVertical('up');
+      else if (e.deltaY < -30) swipeVertical('down');
+    } else {
+      if (e.deltaX > 30) swipeScript(currentSlide, 'open');
+      else if (e.deltaX < -30) swipeScript(currentSlide, 'back');
+    }
+  }, { passive: true });
+
+  function handleSwipe() {
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+    const minSwipe = 50;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      // Vertical swipe
+      if (dy < -minSwipe) swipeVertical('up');
+      else if (dy > minSwipe) swipeVertical('down');
+    } else {
+      // Horizontal swipe
+      if (dx < -minSwipe) swipeScript(currentSlide, 'open');
+      else if (dx > minSwipe) swipeScript(currentSlide, 'back');
+    }
+  }
+
+  function swipeVertical(dir) {
+    // Close any open script first
+    if (scriptStates[currentSlide]) {
+      swipeScript(currentSlide, 'back');
+      return;
+    }
+
+    if (dir === 'up' && currentSlide < totalSlides - 1) currentSlide++;
+    else if (dir === 'down' && currentSlide > 0) currentSlide--;
+    else return;
+
+    carousel.style.transform = `translateY(-${currentSlide * 100}%)`;
+    updateDots();
+  }
+
+  function swipeScript(index, action) {
+    const pair = document.getElementById(`pair-${index}`);
+    if (action === 'open') {
+      pair.style.transform = 'translateX(-50%)';
+      scriptStates[index] = true;
+    } else {
+      pair.style.transform = 'translateX(0)';
+      scriptStates[index] = false;
+    }
+  }
+
+  function updateDots() {
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentSlide);
+    });
+    // Auto-play current video, pause others
+    document.querySelectorAll('.video-player').forEach((v, i) => {
+      if (i === currentSlide) { v.play().catch(()=>{}); }
+      else { v.pause(); }
+    });
+  }
+
+  // Start first video on any interaction
+  document.addEventListener('click', () => {
+    const v = document.querySelectorAll('.video-player')[currentSlide];
+    if (v) v.play().catch(()=>{});
+  }, { once: true });
+  // Try autoplay immediately
+  document.querySelectorAll('.video-player')[0]?.play().catch(()=>{});
+</script>
+
+</body>
+</html>
